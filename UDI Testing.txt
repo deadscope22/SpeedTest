@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hetzner Speed Test</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; padding: 2rem; }
+  h1 { margin-bottom: .5rem; }
+  button { font-size: 1rem; padding: .5rem 1rem; margin: 1rem; }
+  .result { margin-top: 1rem; font-size: 1.2rem; }
+</style>
+</head>
+<body>
+
+<h1>Hetzner Speed Test</h1>
+<p>Server: hel1-speed.hetzner.com</p>
+
+<button id="start">Start Test</button>
+
+<div class="result" id="download">Download: —</div>
+<div class="result" id="upload">Upload: —</div>
+
+<script>
+const downloadEl = document.getElementById("download");
+const uploadEl = document.getElementById("upload");
+
+document.getElementById("start").onclick = async () => {
+  await runDownloadTest();
+  await runUploadTest();
+};
+
+async function runDownloadTest() {
+  const sizes = [5, 10, 25]; // MB sizes
+  let totalBps = 0;
+
+  for (let m of sizes) {
+    let url = `https://hel1-speed.hetzner.com/${m}MB.bin?cache_bust=${Date.now()}`;
+    let start = performance.now();
+    await fetch(url);
+    let duration = (performance.now() - start) / 1000;
+    let bits = m * 1024 * 1024 * 8;
+    let bps = bits / duration;
+    totalBps += bps;
+  }
+
+  let avgBps = totalBps / sizes.length;
+  let Mbps = (avgBps / (1024 * 1024)).toFixed(2);
+  downloadEl.textContent = `Download: ${Mbps} Mbps`;
+}
+
+async function runUploadTest() {
+  const sizes = [1, 2, 5]; // MB sizes
+  let totalBps = 0;
+
+  for (let m of sizes) {
+    let blob = new Blob([crypto.getRandomValues(new Uint8Array(m * 1024 * 1024))]);
+    let start = performance.now();
+    await fetch("https://hel1-speed.hetzner.com/upload?cache_bust=" + Date.now(), {
+      method: "POST",
+      body: blob
+    }).catch(() => {});
+    let duration = (performance.now() - start) / 1000;
+    let bits = m * 1024 * 1024 * 8;
+    let bps = bits / duration;
+    totalBps += bps;
+  }
+
+  let avgBps = totalBps / sizes.length;
+  let Mbps = (avgBps / (1024 * 1024)).toFixed(2);
+  uploadEl.textContent = `Upload: ${Mbps} Mbps`;
+}
+</script>
+
+</body>
+</html>
